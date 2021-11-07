@@ -1,7 +1,7 @@
 import json
 import requests
 from pprint import pprint
-from NLP_preprocess import get_data_words
+from NLP_preprocess import AidesDataset
 import gensim
 import gensim.corpora as corpora
 
@@ -27,7 +27,8 @@ if __name__ == '__main__':
     #get_all_pages()
 
     # Create the datawords list
-    data_words = get_data_words("data/AT_aides_full.json")
+    aides_dataset = AidesDataset("data/AT_aides_full.json")
+    data_words = aides_dataset.get_data_words()
     # Create Dictionary
     id2word = corpora.Dictionary(data_words)
     # Create Corpus
