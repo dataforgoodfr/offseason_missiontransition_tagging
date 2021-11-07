@@ -15,6 +15,8 @@ from NLP_preprocess import get_data_words
 import gensim
 import gensim.corpora as corpora
 import nltk
+import pyLDAvis.gensim_models as gensimvis
+import pyLDAvis
 
 nltk.download('punkt')
 
@@ -154,7 +156,6 @@ class AidesDataset:
         self._plot_histogram(fdist1_dict_truncated, file_name_truncated)
         return len(fdist), len(unfreq_words)
 
-
         
 
 if __name__ == '__main__':
@@ -186,6 +187,12 @@ if __name__ == '__main__':
     coherence_model_lda = CoherenceModel(model=lda_model, corpus=corpus, texts=data_preprocessed, dictionary=id2word, coherence='u_mass')
     coherence_lda = coherence_model_lda.get_coherence()
     print('Coherence Score: ', round(coherence_lda, 2))
+
+    #Visualization of topics from keywords
+
+    vis_data = gensimvis.prepare(lda_model, corpus, id2word)
+    vis_html = pyLDAvis.prepared_data_to_html(vis_data, template_type="simple")
+    pyLDAvis.save_html(vis_html, 'test2')
 
     print("done")
 
