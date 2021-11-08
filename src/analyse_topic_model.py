@@ -64,7 +64,10 @@ class LDATopicModel:
     def get_corpus(self):
         """get the corpus given the bag-of-words for each description"""
         data_words = self.dataset.get_data_words()
+        data_words = data_words.values.flatten()
         id2word = corpora.Dictionary(data_words)
+        # Create Corpus
+        #train_corpus = [id2word.doc2bow(feature_words) for feature_words in data_words]
         corpus = [id2word.doc2bow(feature_words) for feature_words in data_words]
         self.corpus = corpus
         self.id2word = id2word

@@ -101,7 +101,8 @@ def flatten_list(nested_list):
 if __name__ == '__main__':
     aides_dataset = AidesDataset("data/AT_aides_full.json")
     data_words = aides_dataset.get_data_words()
-    tokens = flatten_list(data_words)
+    tokens = data_words.values.flatten()
+    tokens = flatten_list(list(tokens))
     if not os.path.isdir("plots"):
         os.makedirs("plots")
     plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA")
