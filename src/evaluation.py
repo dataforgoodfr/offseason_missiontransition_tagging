@@ -18,9 +18,10 @@ import pyLDAvis.gensim_models as gensimvis
 import pyLDAvis
 from NLP_preprocess import AidesDataset
 from sklearn.model_selection import train_test_split
+import pickle
 
 
-nltk.download('punkt')
+#nltk.download('punkt')
 
 
 # DEBUG
@@ -76,37 +77,49 @@ if __name__ == '__main__':
     print("====================")
     print("Test Results")
     print("====================")
-
+    print('')
     print("Description:")
     print(data_test['description'][test_index])
+    print('')
     print("Topic:")
     for x in lda_model.get_document_topics(test_corpus):
         print(x)
 
+    print('')
+    print('')
     print("====================")
     print("Evaluation")
     print("====================")
-
+    print('')
+    print('')
     # Compute Perplexity (lower is better)
-    print('Perplexity: ', round(lda_model.log_perplexity(train_corpus), 2))
-
+    print('Log-perplexity : ', round(lda_model.log_perplexity(train_corpus), 2)) #Calculate and return per-word likelihood bound, using the chunk of documents as evaluation corpus.
+    print('')
     # Compute Coherence Score (higher is better)
     coherence_model_lda = CoherenceModel(model=lda_model, corpus=train_corpus, texts=processed_data, dictionary=id2word, coherence='u_mass')
     coherence_lda = coherence_model_lda.get_coherence()
     print('Coherence Score: ', round(coherence_lda, 2))
 
+    print('')  
+    print('Umass for topic : ', lda_model.top_topics(train_corpus)) #Calculate the Umass topic coherence for each topic.
 
+    print('')
+    print('')
     print("====================")
     print("Visalization")
     print("====================")
+    print('')
 
-    #Visualization of topics from keywords
+    # Visualize the topics from keywords
 
-    vis_data = gensimvis.prepare(lda_model,train_corpus, id2word)
-    vis_html = pyLDAvis.prepared_data_to_html(vis_data, template_type="simple")
-    #pyLDAvis.save_html(vis_html, 'test2')
-    pyLDAvis.show(vis_data, local=False)
-    #print(vis_html)
+    LDAvis_prepared = gensimvis.prepare(lda_model, train_corpus, id2word)
+    with open("plots/ldavis_prepared.html", 'wb') as f:
+        pickle.dump(LDAvis_prepared, f)
+# load the pre-prepared pyLDAvis data from disk
+    with open("plots/ldavis_prepared.html", 'rb') as f:
+        LDAvis_prepared = pickle.load(f)
+    pyLDAvis.save_html(LDAvis_prepared, "plots/ldavis_prepared.html")
+
     print("done")
 
 
