@@ -7,9 +7,14 @@ import nltk
 # nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.stem.snowball import FrenchStemmer
+from nltk.probability import FreqDist
+from collections import Counter
 import pandas as pd
 from explore_data import plot_most_common_words
 import os
+
+# DEBUG
+from pdb import set_trace as bp
 
 class AidesDataset:
     def __init__(self, json_path):
@@ -54,6 +59,8 @@ class AidesDataset:
         # Remove stopwords and stem
         data = remove_stopwords(data, ["description"])
         data = french_stemmer(data, ["description"])
+        data = remove_most_common_words(29, data, ["description"])
+        # data = remove_words_per_documents(.25, data, ["description"])
         return data
 
 def sent_to_words(data, selected_features):
@@ -79,30 +86,42 @@ def french_stemmer(data, selected_features):
             lambda words_list : [stemmer.stem(word) for word in words_list])
     return data
 
-def get_data_words(link):
-    ''' Load, clean and format the aides. Return a list of list of words '''
-    # Uncomment to dowload JSON file
-    dataset = AidesDataset(link)
-    dataset.filter_features(["id", "description"])
-    dataset.clean_text_features(["description"])
-    data = dataset.to_pandas()
-    data = sent_to_words(data, ["description"])
-    # Remove stopwords and stem
-    data = remove_stopwords(data, ["description"])
-    data = french_stemmer(data, ["description"])
+def remove_most_common_words(n, data, selected_features):
+    '''Remove the n most common words in data'''
+    tokens = data[selected_features].values.flatten()
+    tokens = flatten_list(list(tokens))
+    fdist = FreqDist(tokens)
+    most_common = fdist.most_common(n)
+    most_common = [t[0] for t in most_common]
+    for feature in selected_features:
+        data[feature] = data[feature].map(
+            lambda words_list : [word for word in words_list if word not in most_common])
     return data
 
+# def remove_words_per_documents (r, data, selected_features):
+#     '''Remove the words that appear in more than a ratio of r documents'''
+#     word_per_file = sum((Counter(set(x)) for x in data[selected_features]), Counter())
+#     print([x for x in data[selected_features]])
+#     frequent_words = []
+#     print(word_per_file.keys())
+#     for word in word_per_file.keys():
+#         if word_per_file[word] > int(r * len(data)):
+#             frequent_words.append(word)
+#     print(frequent_words)
+#     for feature in selected_features:
+#         data[feature] = data[feature].map(
+#             lambda words_list : [word for word in words_list if word not in frequent_words])
+#     return data
 
 def flatten_list(nested_list):
     flattened_list = [s for l in nested_list for s in l]
     return flattened_list
 
-
-if __name__ == '__main__':
-    aides_dataset = AidesDataset("data/AT_aides_full.json")
-    data_words = aides_dataset.get_data_words()
-    tokens = data_words.values.flatten()
-    tokens = flatten_list(list(tokens))
-    if not os.path.isdir("plots"):
-        os.makedirs("plots")
-    plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA")
+# if __name__ == '__main__':
+#     aides_dataset = AidesDataset("data/AT_aides_full.json")
+#     data_words = aides_dataset.get_data_words()
+#     tokens = data_words.values.flatten()
+#     tokens = flatten_list(list(tokens))
+#     if not os.path.isdir("plots"):
+#         os.makedirs("plots")
+#     plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA")
