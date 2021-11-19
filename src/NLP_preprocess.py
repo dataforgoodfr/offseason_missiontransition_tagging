@@ -12,6 +12,7 @@ from collections import Counter
 import pandas as pd
 from explore_data import plot_most_common_words
 import os
+import numpy as np
 
 # DEBUG
 from pdb import set_trace as bp
@@ -59,8 +60,8 @@ class AidesDataset:
         # Remove stopwords and stem
         data = remove_stopwords(data, ["description"])
         data = french_stemmer(data, ["description"])
-        data = remove_most_common_words(29, data, ["description"])
-        # data = remove_words_per_documents(.25, data, ["description"])
+        # data = remove_most_common_words(29, data, ["description"])
+        data = remove_words_per_documents(.2, data, ["description"])
         return data
 
 def sent_to_words(data, selected_features):
@@ -98,20 +99,25 @@ def remove_most_common_words(n, data, selected_features):
             lambda words_list : [word for word in words_list if word not in most_common])
     return data
 
-# def remove_words_per_documents (r, data, selected_features):
-#     '''Remove the words that appear in more than a ratio of r documents'''
-#     word_per_file = sum((Counter(set(x)) for x in data[selected_features]), Counter())
-#     print([x for x in data[selected_features]])
-#     frequent_words = []
-#     print(word_per_file.keys())
-#     for word in word_per_file.keys():
-#         if word_per_file[word] > int(r * len(data)):
-#             frequent_words.append(word)
-#     print(frequent_words)
-#     for feature in selected_features:
-#         data[feature] = data[feature].map(
-#             lambda words_list : [word for word in words_list if word not in frequent_words])
-#     return data
+def remove_words_per_documents (r, data, selected_features):
+    '''Remove the words that appear in more than a ratio of r documents'''
+    # Transform list of word into sets (to count each word one time per document)
+    # then into counters and sum all the counters.
+    word_per_file_serie = data[selected_features[0]]
+    for feature in selected_features[1:]:
+        word_per_file_serie += data[feature]
+    word_per_file = word_per_file_serie.map(lambda x : Counter(set(x))).sum()
+    # print(word_per_file_serie)
+    frequent_words = []
+    # print(word_per_file.items())
+    for word in word_per_file.keys():
+        if word_per_file[word] > int(r * len(data)):
+            frequent_words.append(word)
+    print(frequent_words)
+    for feature in selected_features:
+        data[feature] = data[feature].map(
+            lambda words_list : [word for word in words_list if word not in frequent_words])
+    return data
 
 def flatten_list(nested_list):
     flattened_list = [s for l in nested_list for s in l]
