@@ -60,8 +60,8 @@ class AidesDataset:
         # Remove stopwords and stem
         data = remove_stopwords(data, ["description"])
         data = french_stemmer(data, ["description"])
-        # data = remove_most_common_words(29, data, ["description"])
-        data = remove_words_per_documents(.2, data, ["description"])
+        data = remove_most_common_words(500, data, ["description"])
+        # data = remove_words_per_documents(.2, data, ["description"])
         return data
 
 def sent_to_words(data, selected_features):
@@ -88,19 +88,17 @@ def french_stemmer(data, selected_features):
     return data
 
 def remove_most_common_words(n, data, selected_features):
-    '''Remove the n most common words in data'''
+    ''' Remove words in data that appear more than n times in total '''
     tokens = data[selected_features].values.flatten()
     tokens = flatten_list(list(tokens))
     fdist = FreqDist(tokens)
-    most_common = fdist.most_common(n)
-    most_common = [t[0] for t in most_common]
     for feature in selected_features:
         data[feature] = data[feature].map(
-            lambda words_list : [word for word in words_list if word not in most_common])
+            lambda words_list : [word for word in words_list if fdist[word] < n])
     return data
 
 def remove_words_per_documents (r, data, selected_features):
-    '''Remove the words that appear in more than a ratio of r documents'''
+    ''' Remove the words that appear in more than a ratio of r documents '''
     # Transform list of word into sets (to count each word one time per document)
     # then into counters and sum all the counters.
     word_per_file_serie = data[selected_features[0]]
