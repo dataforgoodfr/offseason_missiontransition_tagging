@@ -46,8 +46,9 @@ def get_all_pages():
         json.dump(all_data, f, ensure_ascii=False, indent=4)
 
 # determining optimal number of topics
+"""
 def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
-    """
+    ""
     Compute c_v coherence for various number of topics
     Parameters:
     ----------
@@ -59,17 +60,24 @@ def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
     -------
     model_list : List of LDA topic models
     coherence_values : Coherence values corresponding to the LDA model with respective number of topics
-    """
+    ""
     coherence_values = []
     model_list = []
-    for num_topics in range(start, limit, step):
-        model = gensim.models.LdaMulticore(corpus=corpus, num_topics=num_topics, id2word=id2word)
+    for num_topics in range(1,3):
+        print("depart boucle ", num_topics)
+        model = gensim.models.LdaMulticore(corpus=corpus,
+                                           id2word=dictionary,
+                                           num_topics=num_topics)
+        print("model pour ", num_topics, " fait")
         model_list.append(model)
+        print("model pour ", num_topics, " ajoute")
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='u_mass')
+        print("coherence pour ", num_topics, " fait")
         coherence_values.append(coherencemodel.get_coherence())
+        print("coherence pour ", num_topics, " ajoute")
 
     return model_list, coherence_values
-
+"""
 
 if __name__ == '__main__':
     #Uncomment to download the json file
@@ -92,18 +100,16 @@ if __name__ == '__main__':
     train_corpus = [id2word.doc2bow(feature_words) for feature_words in data_words]
 
     # number of topics
-    num_topics = 10
-
+    num_topics = 5
+    print("test 1")
     # Build LDA model
     lda_model = gensim.models.LdaMulticore(corpus=train_corpus,
                                            id2word=id2word,
                                            num_topics=num_topics)
+    
+
     # Print the Keyword in the 10 topics
     pprint(lda_model.print_topics())
-
-    #Build LDA Mallet
-    #mallet_path = '~/Téléchargements/mallet-2.0.8/bin/mallet'
-    #ldamallet = gensim.models.wrappers.LdaMallet(mallet_path,corpus=train_corpus,num_topics=num_topics,id2word=id2word,random_seed=42,workers=6)
 
 
     # Testing the model
@@ -144,18 +150,6 @@ if __name__ == '__main__':
     coherence_model_lda = CoherenceModel(model=lda_model, corpus=train_corpus, texts=processed_data, dictionary=id2word, coherence='u_mass')
     coherence_lda = coherence_model_lda.get_coherence()
     print('Coherence Score: ', round(coherence_lda, 2))
-
-    #Not for LDAMulticore, but for LDA Mallet Model
-    # Log Likelyhood: Higher the better
-    #print("Log Likelihood: ", ldamallet.score(processed_data))
-
-    #Not for LDAMulticore, but for LDA Mallet Model
-    # Perplexity: Lower the better. Perplexity = exp(-1. * log-likelihood per word)
-    #print("Perplexity: ", ldamallet.perplexity(processed_data))
-
-
-    # See model parameters
-    #pprint(ldamallet.get_params())
     
     print('')
     print('')
@@ -179,22 +173,36 @@ if __name__ == '__main__':
     print("====================")
     print("Optimal number of topics")
     print("====================")
+    #bp()
     print('')
-    
 
     # NOTE: can take a long time to run...
+    """
     model_list, coherence_values = compute_coherence_values(dictionary=id2word, 
                                                         corpus=train_corpus, 
                                                         texts=processed_data, 
                                                         start=10, 
-                                                        limit=11, 
+                                                        limit=12, 
                                                         step=1)
     
+    """
+
+    import csv
+    #to create the file
+    #with open('plots/num_opti_topics.csv','w',newline='', encoding='utf-8') as fichiercsv:
+    #to add to the file
+    with open('plots/num_opti_topics.csv','a',newline='', encoding='utf-8') as fichiercsv:
+        writer=csv.writer(fichiercsv)
+        #writer.writerow(['Number of topics', 'Coherence'])
+        writer.writerow([num_topics, round(coherence_lda, 2)])
+
+    """
     matplotlib.use('Agg')
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(coherence_values)
     fig.savefig('plots/test.png')
+    """
 
     print("done")
 
