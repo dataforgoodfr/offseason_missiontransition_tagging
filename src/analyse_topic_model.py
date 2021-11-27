@@ -35,14 +35,15 @@ def create_topic_dictionnary(topics):
 
 
 class LDATopicModel:
-    def __init__(self, dataset, num_topics=10, out_path="output/lda_topic_model"):
+    def __init__(self, dataset, args, num_topics=10, out_path="output/lda_topic_model"):
         self.num_topics = num_topics
         self.dataset = dataset
-        self.out_path = self.create_output_path(out_path)
+        self.out_path = self.create_output_path(out_path, args)
         _ = self.get_corpus()
 
-    def create_output_path(self, out_path):
+    def create_output_path(self, out_path, args):
         """create the output path for saving LDA topic model results"""
+        out_path = os.path.join(out_path, '{}topics_{}bs_{}it_eta-{}_alpha-{}_offset{}_decay{}'.format(args.num_topics, args.update_every, args.iterations, args.eta, args.alpha, args.offset, args.decay))
         if not os.path.isdir(out_path):
             os.makedirs(out_path)
         return out_path
@@ -63,11 +64,12 @@ class LDATopicModel:
                 json.dump(dict(id2word), f, ensure_ascii=False)
         return data_words
 
-    def train_LDA_model(self):
+    def train_LDA_model(self, args):
         """train the LDA model and return the topics"""
-        lda_model = gensim.models.LdaMulticore(corpus=self.corpus,
+        lda_model = gensim.models.LdaModel(corpus=self.corpus,
                                                id2word=self.id2word,
-                                               num_topics=self.num_topics)
+                                               num_topics=self.num_topics, alpha=args.alpha, eta=args.eta, update_every=args.update_every,  iterations=args.iterations,
+                                               decay=args.decay, offset=args.offset)
         topics = lda_model.print_topics()
         return lda_model, topics
 
@@ -84,9 +86,10 @@ class LDATopicModel:
         print(frequent_occurences)
         out_file = os.path.join(self.out_path, "topic_per_description.txt")
         with open(out_file, 'a') as f:
+            f.write(str(topics) + '\n')
             for descr_id in range(num_descr):
                 descr, descr_topic = self.get_topic_per_description(descr_id, lda_model, topics)
-                f.write(list(descr.values())[0] + '\n'+ '\n')
+                f.write(str(list(descr.values())[0])+ '\n'+ '\n')
                 for topic in descr_topic:
                     f.write(str(topic)+ '\n')
                 f.write('\n' + '-' * 60 + '\n')
@@ -101,22 +104,30 @@ class LDATopicModel:
         topic_ids = [t[0] for t in topics_rate]
         topic_prop = [t[1] for t in topics_rate]
         description_topics = [({k: v}, topics[k]) for k, v in zip(topic_ids, topic_prop)]
-        description = self.dataset.aides[description_id]
+        description = {self.dataset.aides[description_id]["id"]:self.dataset.aides[description_id]["description"]}
         return description, description_topics
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # data parameters:
-    parser.add_argument("-num_topics", type=int, default=10, help='number of topics in the lda model.')
+    parser.add_argument("-num_topics", type=int, default=5, help='number of topics in the lda model.')
+    parser.add_argument("-update_every", type=int, default=1, help='size of batch')
+    parser.add_argument("-iterations", type=int, default=50, help='number of iterations.')
+    parser.add_argument("-alpha", type=str, default="symmetric", help='number of topics in the lda model.')
+    parser.add_argument("-eta", type=str, help='number of topics in the lda model.')
+    parser.add_argument("-offset", type=int, default=1, help='number of topics in the lda model.')
+    parser.add_argument("-decay", type=float, default=0.5,  help='number of topics in the lda model.')
     args = parser.parse_args()
+
+    print('Hyper-parameters:', args)
 
     # Get the aides Dataset
     aides_dataset = AidesDataset("data/AT_aides_full.json")
     # Build the LDA Topic Model
-    lda_TM = LDATopicModel(dataset=aides_dataset, num_topics=args.num_topics)
+    lda_TM = LDATopicModel(dataset=aides_dataset, num_topics=args.num_topics, args=args)
     # Train the LDA Model
-    lda_model, topics = lda_TM.train_LDA_model()
+    lda_model, topics = lda_TM.train_LDA_model(args)
     lda_TM.postprocess_topics(lda_model=lda_model, topics=topics)
 
     # for unseen document, we can use:
