@@ -100,7 +100,7 @@ if __name__ == '__main__':
     train_corpus = [id2word.doc2bow(feature_words) for feature_words in data_words]
 
     # number of topics
-    num_topics = 5
+    num_topics = 20
     print("test 1")
     # Build LDA model
     lda_model = gensim.models.LdaMulticore(corpus=train_corpus,
@@ -193,8 +193,8 @@ if __name__ == '__main__':
     #to add to the file
     with open('plots/num_opti_topics.csv','a',newline='', encoding='utf-8') as fichiercsv:
         writer=csv.writer(fichiercsv)
-        #writer.writerow(['Number of topics', 'Coherence'])
-        writer.writerow([num_topics, round(coherence_lda, 2)])
+        #writer.writerow(['Number of topics', 'Coherence', 'Log-perplexity'])
+        writer.writerow([num_topics, round(coherence_lda, 2), round(lda_model.log_perplexity(train_corpus), 2)])
 
     """
     matplotlib.use('Agg')
