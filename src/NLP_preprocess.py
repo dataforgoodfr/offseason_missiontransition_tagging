@@ -18,8 +18,10 @@ import numpy as np
 from pdb import set_trace as bp
 
 class AidesDataset:
-    def __init__(self, json_path):
+    def __init__(self, json_path, words_num=500, words_ratio=0.):
         self.aides = self.get_aides(json_path)
+        self.words_num = words_num
+        self.words_ratio = words_ratio
 
     def get_aides(self, json_path):
         ''' Load JSON file containing the aides '''
@@ -60,8 +62,9 @@ class AidesDataset:
         # Remove stopwords and stem
         data = remove_stopwords(data, ["description"])
         data = french_stemmer(data, ["description"])
-        data = remove_most_common_words(500, data, ["description"])
-        # data = remove_words_per_documents(.2, data, ["description"])
+        data = remove_most_common_words(self.words_num, data, ["description"])
+        if self.words_ratio > 0.:
+            data = remove_words_per_documents(self.words_ratio, data, ["description"])
         return data
 
 def sent_to_words(data, selected_features):
