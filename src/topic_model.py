@@ -13,6 +13,7 @@ import pyLDAvis
 import pickle
 import math
 import pandas as pd
+import numpy as np
 # DEBUG
 from pdb import set_trace as bp
 
@@ -54,7 +55,9 @@ class LDATopicModel:
 
     def create_output_path(self, out_path):
         """create the output path for saving LDA topic model results"""
-        out_path = os.path.join(out_path, '{}topics_{}bs_{}it_eta-{}_alpha-{}_offset{}_decay{}'.format(self.num_topics,
+        out_path = os.path.join(out_path, '{}w_{}r_{}topics_{}bs_{}it_eta-{}_alpha-{}_offset{}_decay{}'.format(self.hyper_params.words_num,
+                                                                                                       self.hyper_params.words_ratio,
+                                                                                                       self.num_topics,
                                                                                                         self.hyper_params.update_every,
                                                                                                        self.hyper_params.iterations,
                                                                                                        self.hyper_params.eta,
@@ -68,7 +71,7 @@ class LDATopicModel:
 
     def init_results(self):
         name_metrics = ["train_perplexity", "test_perplexity", "train_coherence", "test_coherence", "frequent_words",
-                        "topics"]
+                        "topics", "vocab_size"]
         self.results = dict.fromkeys(name_metrics)
 
     def save_results(self):
@@ -121,6 +124,7 @@ class LDATopicModel:
         self.results["test_perplexity"] = test_ppl
         self.results["train_coherence"] = train_coherence
         self.results["test_coherence"] = test_coherence
+        self.results["vocab_size"] = len(self.id2word)
         return (train_ppl, train_coherence_lda), (test_ppl, test_coherence_lda)
 
     def vizualize_topics(self, lda_model):
@@ -170,28 +174,62 @@ class LDATopicModel:
 if __name__ == '__main__':
     from argparse import Namespace
 
-    hyper_params = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
+    csv_hparams = "data/csv_model_hparams.csv"
+
+    df_hparams = pd.read_csv(csv_hparams)
+
+    def read_df_hparams(df_hparams):
+        list_hparams = []
+        for i in range(len(df_hparams)):
+            hparams = df_hparams.iloc[i].to_dict()
+            for key, val in hparams.items():
+                if pd.isna(val):
+                    hparams[key] = None
+            list_hparams.append(hparams)
+        return list_hparams
+
+    def merge_results(results):
+        df_results = []
+        for result in results:
+            df_results.append(pd.DataFrame.from_dict(result))
+        return df_results
+
+
+    hparams = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
                     'alpha': 'symmetric', 'eta': None, 'offset': 1, 'decay': 0.5}
 
-    # alpha is either 'symetric' or 'assymetric'
+    # alpha is either 'symmetric' or 'assymmetric'
     # eta is either None or 'auto'
     # decay is between 0.5 & 1.eta
 
-    hyper_params = Namespace(**hyper_params)
+    list_hparams = read_df_hparams(df_hparams)
 
-    print('Hyper-parameters:', hyper_params)
+    list_results = []
 
-    # Get the aides Dataset
-    aides_dataset = AidesDataset("data/AT_aides_full.json", words_num=hyper_params.words_num, words_ratio=hyper_params.words_ratio)
-    # Build the LDA Topic Model
-    lda_TM = LDATopicModel(dataset=aides_dataset, hyper_params=hyper_params)
-    # Train the LDA Model
-    lda_model, topics = lda_TM.train_LDA_model()
-    lda_TM.postprocess_topics(lda_model=lda_model, topics=topics)
-    lda_TM.compute_eval_metrics(lda_model=lda_model)
-    lda_TM.save_results()
+    for hparams in list_hparams:
 
-    # for unseen document, we can use:
-    # get_document_topics(bow, minimum_probability=None, minimum_phi_value=None, per_word_topics=False)
+        hparams = Namespace(**hparams)
 
-    print("done")
+        print('Hyper-parameters:', hparams)
+
+        # Get the aides Dataset
+        aides_dataset = AidesDataset("data/AT_aides_full.json", words_num=hparams.words_num, words_ratio=hparams.words_ratio)
+        # Build the LDA Topic Model
+        lda_TM = LDATopicModel(dataset=aides_dataset, hyper_params=hparams)
+        # Train the LDA Model
+        lda_model, topics = lda_TM.train_LDA_model()
+        lda_TM.postprocess_topics(lda_model=lda_model, topics=topics)
+        lda_TM.compute_eval_metrics(lda_model=lda_model)
+        lda_TM.save_results()
+        list_results.append(lda_TM.results)
+
+        # for unseen document, we can use:
+        # get_document_topics(bow, minimum_probability=None, minimum_phi_value=None, per_word_topics=False)
+
+        print("done")
+
+    df_results = pd.DataFrame.from_records(list_results)
+
+    df_results = pd.concat([df_hparams, df_results], axis=1)
+
+    df_results.to_csv(os.path.join("output/lda_topic_model", "results_hparams.csv"))
