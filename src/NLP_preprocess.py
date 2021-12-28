@@ -13,6 +13,7 @@ import pandas as pd
 from explore_data import plot_most_common_words
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 # DEBUG
 from pdb import set_trace as bp
@@ -52,6 +53,14 @@ class AidesDataset:
         ''' Transform an AidesDataset to a pandas dataframe
             with column idexed by the dictionaries keys '''
         return pd.DataFrame.from_records(self.aides, index = 'id')
+
+    def get_unfiltered_data_words(self):
+        ''' Load, clean and format the aides. Return a list of list of words '''
+        self.filter_features(["id", "description"])
+        self.clean_text_features(["description"])
+        data = self.to_pandas()
+        data = sent_to_words(data, ["description"])
+        return data
 
     def get_data_words(self):
         ''' Load, clean and format the aides. Return a list of list of words '''
@@ -100,7 +109,7 @@ def remove_most_common_words(n, data, selected_features):
             lambda words_list : [word for word in words_list if fdist[word] < n])
     return data
 
-def remove_words_per_documents (r, data, selected_features):
+def remove_words_per_documents(r, data, selected_features):
     ''' Remove the words that appear in more than a ratio of r documents '''
     # Transform list of word into sets (to count each word one time per document)
     # then into counters and sum all the counters.
@@ -124,11 +133,34 @@ def flatten_list(nested_list):
     flattened_list = [s for l in nested_list for s in l]
     return flattened_list
 
-# if __name__ == '__main__':
-#     aides_dataset = AidesDataset("data/AT_aides_full.json")
-#     data_words = aides_dataset.get_data_words()
-#     tokens = data_words.values.flatten()
-#     tokens = flatten_list(list(tokens))
-#     if not os.path.isdir("plots"):
-#         os.makedirs("plots")
-#     plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA")
+def plot_most_common_words(tokens, file_name, num_words=30):
+    fdist = FreqDist(tokens)
+    fdist1 = fdist.most_common(num_words)
+    fdist1_dict = {key: value for key, value in fdist1}
+    plot_histogram(fdist1_dict, file_name)
+    return len(fdist)
+
+def plot_histogram(freq_dict, file_name):
+    fig, ax = plt.subplots(1, 1, figsize=(60, 10))
+    ax.set_title("Most common words")
+    ax.bar(freq_dict.keys(), freq_dict.values())
+    # ax.xticks(rotation=45)
+    ax.tick_params(axis='x', labelsize=24, labelrotation=45)
+    rects = ax.patches
+    labels = [rect.get_height() for rect in rects]
+    for rect, label in zip(rects, labels):
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width() / 2, height + 0.01, label,
+                ha='center', va='bottom', fontsize=20)
+    ax.legend()
+    plt.tight_layout()
+    fig.savefig(file_name, format='pdf')
+
+if __name__ == '__main__':
+    aides_dataset = AidesDataset("data/AT_aides_full.json")
+    data_words = aides_dataset.get_data_words()
+    tokens = data_words.values.flatten()
+    tokens = flatten_list(list(tokens))
+    if not os.path.isdir("plots"):
+        os.makedirs("plots")
+    plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA", num_words=70)
