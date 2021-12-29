@@ -24,6 +24,10 @@ def filter_results(df_results, thr=0.5):
         df_results[col] = mask * df_results[col]
     return df_results
 
+def get_tag_descr(df_results, tag, thr=0.5):
+    df_results = df_results[df_results[tag]>thr][tag]
+    return list(df_results.index)
+
 def get_description_tags(df_results, id, thr=0.5):
     scores = df_results.loc[id]
     scores = scores[scores > thr]
