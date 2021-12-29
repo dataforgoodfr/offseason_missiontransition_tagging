@@ -194,9 +194,9 @@ if __name__ == '__main__':
             df_results.append(pd.DataFrame.from_dict(result))
         return df_results
 
-
-    hparams = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
-                    'alpha': 'symmetric', 'eta': None, 'offset': 1, 'decay': 0.5}
+    # examples of hparams:
+    # hparams = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
+    #                 'alpha': 'symmetric', 'eta': None, 'offset': 1, 'decay': 0.5}
 
     # alpha is either 'symmetric' or 'assymmetric'
     # eta is either None or 'auto'

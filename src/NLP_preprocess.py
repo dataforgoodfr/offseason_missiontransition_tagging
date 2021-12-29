@@ -55,7 +55,7 @@ class AidesDataset:
         return pd.DataFrame.from_records(self.aides, index = 'id')
 
     def get_unfiltered_data_words(self):
-        ''' Load, clean and format the aides. Return a list of list of words '''
+        ''' Get unfiltered data words from zero-shot classification.'''
         self.filter_features(["id", "description"])
         self.clean_text_features(["description"])
         data = self.to_pandas()
@@ -75,6 +75,12 @@ class AidesDataset:
         if self.words_ratio > 0.:
             data = remove_words_per_documents(self.words_ratio, data, ["description"])
         return data
+
+    def get_short_descriptions(self, data_words, max_len=50):
+        data_words["len"] = data_words["description"].apply(len)
+        short_descr = data_words[data_words["len"]<=max_len]
+        return short_descr
+
 
 def sent_to_words(data, selected_features):
     ''' From a panda dataframe, transform text in features in a
@@ -159,6 +165,8 @@ def plot_histogram(freq_dict, file_name):
 if __name__ == '__main__':
     aides_dataset = AidesDataset("data/AT_aides_full.json")
     data_words = aides_dataset.get_data_words()
+    unfiltered_words = aides_dataset.get_unfiltered_data_words()
+    short_descr = aides_dataset.get_short_descriptions(unfiltered_words)
     tokens = data_words.values.flatten()
     tokens = flatten_list(list(tokens))
     if not os.path.isdir("plots"):
