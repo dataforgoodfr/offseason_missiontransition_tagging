@@ -36,8 +36,10 @@ def get_description_tags(df_results, id, thr=0.5):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-dataset", type=str, default='at',
+    parser.add_argument("-dataset", type=str, default='mt',
                         help='dataset selection. at=aide territoire aides. mt=mission transition aides')
+    parser.add_argument("-num_samples", type=int,
+                        help='limit number of samples for debugging.')
     args = parser.parse_args()
     classifier = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli')
 
@@ -57,7 +59,8 @@ if __name__ == '__main__':
     results = dict.fromkeys(["id"] + tags)
     for key in results.keys():
         results[key] = []
-    for id, descr_words in zip(list(processed_data.index[:5]), data_words[:5]):
+    num_samples = len(data_words) if args.num_samples is None else args.num_samples
+    for id, descr_words in zip(list(processed_data.index[:num_samples]), data_words[:num_samples]):
         descr = ' '.join(descr_words)
         result = classify_description(classifier, descr, tags)
         update_results(results, result, id)
