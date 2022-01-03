@@ -6,12 +6,14 @@ The libraries needed to run the code are provided in the file requirements.txt.
 * To run all the scripts from the origin repo (SMC-T-v2), run first the following command line: `export PYTHONPATH=src:${PYTHONPATH}`
 
 ### Download the data
-* `python src/download_data.py`
-> This saves a json file in a 'data' folder named "AT_aides_full.json"
+* `python src/download_data.py -dataset "at"`
+> This saves a json file in a 'data' folder named "AT_aides_full.json" with all Aides Territoires aides. 
+* `python src/download_data.py -dataset "mt"`
+> This saves a json file in a 'data' folder named "MT_aides.json" with only Mission Transition aides. 
 
 ### Statistics on the dataset
 * `python src/aides_dataset.py`
-> This saves plots in a "plots" folder.
+> This saves plots in a "plots" folder containing the most frequent words for the dataset descriptions. 
 
 ### Run a LDA topic model
 * First fill up the hyper-parameters you want in the csv file "data/csv_model_hparams.csv". 
@@ -20,4 +22,5 @@ The libraries needed to run the code are provided in the file requirements.txt.
 
 ### Run zeroshot text classification on the dataset
 * `python src\zeroshot_text_classification.py`
-> This saves 2 csv files in a folder "output/zeroshot_classif"
+> This saves 2 csv files in a folder "output/zeroshot_classif", "results.csv" and "tags_per_descr.csv". 
+
