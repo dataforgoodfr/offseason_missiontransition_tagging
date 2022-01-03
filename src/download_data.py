@@ -1,5 +1,6 @@
 import json
 import requests
+import os
 
 if __name__ == '__main__':
     all_data = []
@@ -12,5 +13,7 @@ if __name__ == '__main__':
         response = requests.get(link, verify=False)
         json_file = response.json()
         all_data += json_file["results"]
+    if not os.path.isdir("data"):
+        os.makedirs("data")
     with open("data/AT_aides_full.json", 'w') as f:
         json.dump(all_data, f, ensure_ascii=False, indent=4)
