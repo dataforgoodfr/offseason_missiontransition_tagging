@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser.add_argument("-num_samples", type=int,
                         help='limit number of samples for debugging.')
     args = parser.parse_args()
-    classifier = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli')
+    classifier = pipeline("zero-shot-classification", model='cache/xnli')
 
     # read candidate tags
     zeroshot_tags_csv = "data/zeroshot_tags.csv"
