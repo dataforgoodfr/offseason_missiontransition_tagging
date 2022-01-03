@@ -2,6 +2,7 @@ from transformers import pipeline
 from src.aides_dataset import AidesDataset
 import pandas as pd
 import os
+import argparse
 
 def classify_description(classifier, description, candidate_tags):
     hypothesis_template = "Ce texte est {}."
@@ -34,7 +35,10 @@ def get_description_tags(df_results, id, thr=0.5):
 
 
 if __name__ == '__main__':
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-dataset", type=str, default='at',
+                        help='dataset selection. at=aide territoire aides. mt=mission transition aides')
+    args = parser.parse_args()
     classifier = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli')
 
     # read candidate tags
@@ -44,7 +48,8 @@ if __name__ == '__main__':
     tags.sort()
 
     # load dataset
-    dataset = AidesDataset("data/AT_aides_full.json")
+    data_path = "data/AT_aides_full.json" if args.dataset == "at" else "data/MT_aides.json"
+    dataset = AidesDataset(data_path)
     processed_data = dataset.get_unfiltered_data_words()
     data_words = processed_data.values.flatten()
 
