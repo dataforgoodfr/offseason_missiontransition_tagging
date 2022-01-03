@@ -54,17 +54,17 @@ class AidesDataset:
             with column idexed by the dictionaries keys '''
         return pd.DataFrame.from_records(self.aides, index = 'id')
 
-    def get_unfiltered_data_words(self):
+    def get_unfiltered_data_words(self, useful_features=["id", "description"]):
         ''' Get unfiltered data words from zero-shot classification.'''
-        self.filter_features(["id", "description"])
+        self.filter_features(useful_features)
         self.clean_text_features(["description"])
         data = self.to_pandas()
         data = sent_to_words(data, ["description"])
         return data
 
-    def get_data_words(self):
+    def get_data_words(self, useful_features=["id", "description"]):
         ''' Load, clean and format the aides. Return a list of list of words '''
-        self.filter_features(["id", "description"])
+        self.filter_features(useful_features)
         self.clean_text_features(["description"])
         data = self.to_pandas()
         data = sent_to_words(data, ["description"])
@@ -164,7 +164,7 @@ def plot_histogram(freq_dict, file_name):
 
 if __name__ == '__main__':
     aides_dataset = AidesDataset("data/AT_aides_full.json")
-    data_words = aides_dataset.get_data_words()
+    data_words = aides_dataset.get_data_words(["id", "description", "categories"])
     unfiltered_words = aides_dataset.get_unfiltered_data_words()
     short_descr = aides_dataset.get_short_descriptions(unfiltered_words)
     tokens = data_words.values.flatten()
