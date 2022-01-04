@@ -40,6 +40,8 @@ if __name__ == '__main__':
                         help='dataset selection. at=aide territoire aides. mt=mission transition aides')
     parser.add_argument("-num_samples", type=int,
                         help='limit number of samples for debugging.')
+    parser.add_argument("-thr", type=float, default=0.5,
+                        help='limit number of samples for debugging.')
     args = parser.parse_args()
     classifier = pipeline("zero-shot-classification", model='cache/xnli')
 
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     # get tags per description
     list_tags = []
     for id in df_results.index:
-        list_tags.append(get_description_tags(df_results, id))
+        list_tags.append(get_description_tags(df_results, id, thr=args.thr))
     tags_per_description = dict(zip(list(df_results.index), list_tags))
     tags_per_description = pd.DataFrame.from_records(tags_per_description, index=['tags']).T
 
