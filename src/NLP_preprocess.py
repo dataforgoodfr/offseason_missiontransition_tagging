@@ -39,14 +39,31 @@ class AidesDataset:
             filtered_aides.append(filtered_aide)
         self.aides = filtered_aides
 
-    def clean_text_features(self, features_to_clean):
-        ''' Remove part of the punctuation and change the case to lower case
-            in the features features_to_clean '''
+    def clean_text_features(self, features_to_clean, no_html_tags=True,
+        no_escaped_characters=True, no_punctuation=True, no_upper_case=True,
+        no_stopwords=False):
+        ''' Clean the text. Possible operations:
+            - Remove HTML tags.
+            - Remove escaped characters.
+            - Remove punctuation.
+            - Change case to lower case. '''
+        # ''' Remove part of the punctuation and change the case to lower case
+        #     in the features features_to_clean '''
         for aide in self.aides:
             for feature in features_to_clean:
                 if isinstance(aide[feature], str):
-                    aide[feature] = re.sub('[,\.!?:;-]|<.*?>|\n', "", aide[feature])
-                    aide[feature] = aide[feature].lower()
+                    if no_html_tags:
+                        aide[feature] = re.sub(r"<.*?>|</.*?>", "", aide[feature])
+                    if no_escaped_characters:
+                        aide[feature] = re.sub(r"[\t\n\r\f\v]", "", aide[feature])
+                    if no_punctuation:
+                        aide[feature] = re.sub(r"[.,!?:;-]", "", aide[feature])
+                    if no_upper_case:
+                        aide[feature] = aide[feature].lower()
+                    if no_stopwords:
+                        # Source: https://stackoverflow.com/a/19561166
+                        aide[feature] = re.sub(r"\b(" + "|".join(stopwords.words('french')) + r")\b\s*", "", aide[feature])
+                        aide[feature] = re.sub(r"'", "", aide[feature])
 
     def to_pandas(self):
         ''' Transform an AidesDataset to a pandas dataframe
