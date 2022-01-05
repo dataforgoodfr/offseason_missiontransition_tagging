@@ -42,7 +42,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-dataset", type=str, default='mt',
                         help='dataset selection. at=aide territoire aides. mt=mission transition aides')
-    parser.add_argument("-num_samples", type=int, default=1,
+    parser.add_argument("-num_samples", type=int,
                         help='limit number of samples for debugging.')
     parser.add_argument("-thr", type=float, default=0.7,
                         help='thresold value for tag.')
