@@ -1,5 +1,5 @@
 import json
-from NLP_preprocess import AidesDataset
+from aides_dataset import AidesDataset
 import gensim
 import gensim.corpora as corpora
 import os
@@ -41,6 +41,24 @@ def create_topic_dictionnary(topics):
         words_probs = split_topic_words(words)
         dict_topics[key] = words_probs
     return dict_topics
+
+
+def read_df_hparams(df_hparams):
+    list_hparams = []
+    for i in range(len(df_hparams)):
+        hparams = df_hparams.iloc[i].to_dict()
+        for key, val in hparams.items():
+            if pd.isna(val):
+                hparams[key] = None
+        list_hparams.append(hparams)
+    return list_hparams
+
+
+def merge_results(results):
+    df_results = []
+    for result in results:
+        df_results.append(pd.DataFrame.from_dict(result))
+    return df_results
 
 
 class LDATopicModel:
@@ -174,44 +192,22 @@ class LDATopicModel:
 if __name__ == '__main__':
     from argparse import Namespace
 
+    # load hyper-parameters
     csv_hparams = "data/csv_model_hparams.csv"
-
     df_hparams = pd.read_csv(csv_hparams)
-
-    def read_df_hparams(df_hparams):
-        list_hparams = []
-        for i in range(len(df_hparams)):
-            hparams = df_hparams.iloc[i].to_dict()
-            for key, val in hparams.items():
-                if pd.isna(val):
-                    hparams[key] = None
-            list_hparams.append(hparams)
-        return list_hparams
-
-    def merge_results(results):
-        df_results = []
-        for result in results:
-            df_results.append(pd.DataFrame.from_dict(result))
-        return df_results
-
-
-    hparams = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
-                    'alpha': 'symmetric', 'eta': None, 'offset': 1, 'decay': 0.5}
-
+    # examples of hparams:
+    # hparams = {'words_num': 500, 'words_ratio': 0., 'num_topics': 5, 'update_every': 1, 'iterations': 50,
+    #                 'alpha': 'symmetric', 'eta': None, 'offset': 1, 'decay': 0.5}
     # alpha is either 'symmetric' or 'assymmetric'
     # eta is either None or 'auto'
     # decay is between 0.5 & 1.eta
 
     list_hparams = read_df_hparams(df_hparams)
-
     list_results = []
 
     for hparams in list_hparams:
-
         hparams = Namespace(**hparams)
-
         print('Hyper-parameters:', hparams)
-
         # Get the aides Dataset
         aides_dataset = AidesDataset("data/AT_aides_full.json", words_num=hparams.words_num, words_ratio=hparams.words_ratio)
         # Build the LDA Topic Model
@@ -229,7 +225,5 @@ if __name__ == '__main__':
         print("done")
 
     df_results = pd.DataFrame.from_records(list_results)
-
     df_results = pd.concat([df_hparams, df_results], axis=1)
-
     df_results.to_csv(os.path.join("output/lda_topic_model", "results_hparams.csv"))

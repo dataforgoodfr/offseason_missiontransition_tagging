@@ -1,0 +1,10 @@
+words_num,words_ratio,num_topics,update_every,iterations,alpha,eta,offset,decay
+500,0,10,1,50,symmetric,,1,0.5
+500,0.1,10,1,50,symmetric,,1,0.5
+500,0.2,10,1,50,symmetric,,1,0.5
+500,0,8,1,50,symmetric,,1,0.5
+500,0,8,1,50,symmetric,,1,0.7
+500,0,8,1,50,symmetric,,1,0.9
+500,0,8,1,50,asymmetric,,1,0.9
+500,0,8,1,50,symmetric,auto,1,0.9
+500,0,8,1,50,asymmetric,auto,1,0.9
