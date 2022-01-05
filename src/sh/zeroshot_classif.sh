@@ -18,4 +18,6 @@ conda activate rl-nlp
 export PYTHONPATH=src:${PYTHONPATH}
 
 
-srun python -u src/zeroshot_text_classification.py
+srun python -u src/zeroshot_text_classification.py -thr 0.7
+srun python -u src/zeroshot_text_classification.py -thr 0.8
+srun python -u src/zeroshot_text_classification.py -thr 0.9

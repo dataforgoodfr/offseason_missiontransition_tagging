@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # load dataset
     data_path = "data/AT_aides_full.json" if args.dataset == "at" else "data/MT_aides.json"
     dataset = AidesDataset(data_path)
-    processed_data = dataset.get_unfiltered_data_words()
+    processed_data = dataset.get_unfiltered_data_words(useful_features=["description", "id", "categories"])
     data_words = processed_data.values.flatten()
 
     # zero shot text classification
@@ -78,18 +78,20 @@ if __name__ == '__main__':
         list_tags.append(get_description_tags(df_results, id, thr=args.thr))
     tags_per_description = dict(zip(list(df_results.index), list_tags))
     tags_per_description = pd.DataFrame.from_records(tags_per_description, index=['tags']).T
+    tags_per_description["num_tags"] = tags_per_description["tags"].apply(lambda t: len(t.split(";")))
 
     # save results on csv files
     out_path = 'output/zeroshot_classif'
     if not os.path.isdir(out_path):
         os.makedirs(out_path)
     df_results.to_csv(os.path.join(out_path, "results.csv"))
-    tags_per_description.to_csv(os.path.join(out_path, "tags_per_descr.csv"))
+    tags_per_description.to_csv(os.path.join(out_path, "tags_per_descr_thr{}.csv".format(args.thr)))
 
     # look at short descriptions
     short_descr = dataset.get_short_descriptions(processed_data)
+    short_descr["description"] = short_descr["description"].apply(lambda t: ' '.join(t))
     short_descr["tags"] = tags_per_description.loc[list(short_descr.index)]["tags"]
-    short_descr.to_csv(os.path.join(out_path, "short_descr_tags.csv"))
+    short_descr.to_csv(os.path.join(out_path, "short_descr_tags_thr{}.csv".format(args.thr)))
 
     print("done")
 
