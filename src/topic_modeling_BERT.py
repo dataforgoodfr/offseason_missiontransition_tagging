@@ -1,5 +1,5 @@
 
-from NLP_preprocess import AidesDataset
+from aides_dataset import AidesDataset
 
 from bertopic import BERTopic
 

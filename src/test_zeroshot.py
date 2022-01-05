@@ -25,16 +25,17 @@ def filter_results(df_results, thr=0.5):
         df_results[col] = mask * df_results[col]
     return df_results
 
-def get_tag_descr(df_results, tag, thr=0.5):
-    df_results = df_results[df_results[tag]>thr][tag]
-    return list(df_results.index)
-
 def match_tags(df_results, id, true_tags, thr=0.7):
     scores = df_results.loc[id]
     scores = scores[scores > thr]
     predicted_tags = list(scores.index)
     match = set(predicted_tags) and set(true_tags)
     return len(match)/len(true_tags)
+
+def get_description_tags(df_results, id, thr=0.7):
+    scores = df_results.loc[id]
+    scores = scores[scores > thr]
+    return ';'.join(list(scores.index))
 
 
 if __name__ == '__main__':
@@ -43,6 +44,8 @@ if __name__ == '__main__':
                         help='dataset selection. at=aide territoire aides. mt=mission transition aides')
     parser.add_argument("-num_samples", type=int, default=1,
                         help='limit number of samples for debugging.')
+    parser.add_argument("-thr", type=float, default=0.7,
+                        help='thresold value for tag.')
     args = parser.parse_args()
     classifier = pipeline("zero-shot-classification", model='cache/xnli')
 
@@ -56,6 +59,8 @@ if __name__ == '__main__':
     tags = list(set([e for cat in tags_ for e in cat]))
 
     data_words = processed_data["description"].values.flatten()
+
+    print("TESTING ZEROSHOT WITH threshold {}".format(args.thr))
 
     # zero shot text classification
     results = dict.fromkeys(["id"] + tags)
@@ -72,21 +77,32 @@ if __name__ == '__main__':
     df_results = df_results.apply(lambda t: round(t, 3))
     print(df_results.head())
 
-    # get tags per description
+
+    # get tags per description and accuracy
     accuracies = []
+    list_tags = []
+    list_true_tags = []
     for id in df_results.index:
         true_tags = processed_data.loc[id]["categories"]
-        accuracies.append(match_tags(df_results=df_results, id=id, true_tags=true_tags))
+        list_true_tags.append(true_tags)
+        list_tags.append(get_description_tags(df_results, id, thr=args.thr))
+        accuracies.append(match_tags(df_results=df_results, id=id, true_tags=true_tags, thr=args.thr))
+    tags_per_description = dict(zip(list(df_results.index), list_tags))
+    tags_per_description = pd.DataFrame.from_records(tags_per_description, index=['tags']).T
+    #tags_per_description["accuracies"] = pd.Series(accuracies)
+    tags_per_description["accuracies"] = accuracies
+    tags_per_description["num_tags"] = tags_per_description["tags"].apply(lambda t: len(t.split(";")))
+    tags_per_description["true_tags"] = list_true_tags
 
     accuracy = round(np.mean(accuracies),3)
     print("ACCURACY:", accuracy)
 
     # save results on csv files
-    out_path = 'output/zeroshot_classif'
+    out_path = 'output/test_zeroshot'
     if not os.path.isdir(out_path):
         os.makedirs(out_path)
     df_results.to_csv(os.path.join(out_path, "results_test_zeroshot.csv"))
-
+    tags_per_description.to_csv(os.path.join(out_path, "tags_per_descr_thr{}.csv".format(args.thr)))
     print("done")
 
 # TODO: loop on all samples of the dataset.
