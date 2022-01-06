@@ -100,7 +100,7 @@ class LDATopicModel:
     def get_corpus(self):
         """get the corpus given the bag-of-words for each description"""
         processed_data = self.dataset.get_data_words()
-        data_train, data_test = train_test_split(processed_data, test_size=100)
+        data_train, data_test = train_test_split(processed_data, test_size=100, random_state=123)
         data_words = processed_data.values.flatten()
         train_data_words = data_train.values.flatten()
         test_data_words = data_test.values.flatten()

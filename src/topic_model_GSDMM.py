@@ -6,7 +6,7 @@ from gsdmm import MovieGroupProcess
 from gensim.models import CoherenceModel
 from utils import create_logger
 import json
-from NLP_preprocess import AidesDataset
+from aides_dataset import AidesDataset
 import gensim.corpora as corpora
 import os
 import argparse
@@ -34,10 +34,12 @@ def number_docs(model):
 
 # define function to get top words per topic
 def top_words(cluster_word_distribution, top_cluster, values):
+    topics_clusters = dict.fromkeys(top_cluster)
     for cluster in top_cluster:
         sort_dicts = sorted(cluster_word_distribution[cluster].items(), key=lambda k: k[1], reverse=True)[:values]
         print("\nCluster %s : %s"%(cluster, sort_dicts))
-
+        topics_clusters[cluster] = sort_dicts
+    return topics_clusters
 
 def display_wordcloud(nb_topic, cluster_word_distribution):
     # Select topic you want to output as dictionary (using topic_number)
@@ -115,13 +117,15 @@ id2word = corpora.Dictionary(train_data_words)
 def get_corpus():
   """get the corpus given the bag-of-words for each description"""
   #aides_dataset = AidesDataset("AT_aides_full.json")
-  aides_dataset = AidesDataset("MT_aides.json")
+  aides_dataset = AidesDataset("data/MT_aides.json")
+  aides_dataset_2 = AidesDataset("data/MT_aides.json")
   processed_data = aides_dataset.get_data_words()
-  data_train, data_test = train_test_split(processed_data, test_size=100)
+  short_descr = aides_dataset.get_short_descriptions(aides_dataset_2.get_unfiltered_data_words(useful_features=["id", "description", "categories"]))
+  data_train, data_test = train_test_split(processed_data, test_size=100, random_state=123)
   data_words = processed_data.values.flatten()
   train_data_words = data_train.values.flatten()
   test_data_words = data_test.values.flatten()
-  id2word = corpora.Dictionary(data_words)  # the vocabulary is built upon all data
+  id2word = corpora.Dictionary(data_words)  # the vocabulary is built upon all data #TODO: issue with this line.
   # Create train Corpus & test corpus
   train_corpus = [id2word.doc2bow(feature_words) for feature_words in train_data_words]
   test_corpus = [id2word.doc2bow(feature_words) for feature_words in test_data_words]
@@ -134,10 +138,10 @@ def get_corpus():
   # vocab_out_path = os.path.join(self.out_path, "id2word.json")
   # with open(vocab_out_path, 'w') as f:
   #     json.dump(dict(id2word), f, ensure_ascii=False)
-  return train_data_words, test_data_words, id2word, train_corpus
+  return train_data_words, test_data_words, id2word, train_corpus, short_descr
 
 # initialize GSDMM
-train_data_words, test_data_words, id2word, train_corpus = get_corpus()
+train_data_words, test_data_words, id2word, train_corpus, short_descr = get_corpus()
 gsdmm = MovieGroupProcess(K=15, alpha=0.1, beta=0.3, n_iters=15)
 
 # fit GSDMM model
@@ -147,9 +151,33 @@ gsdmm.fit(train_data_words, len(id2word))
 # Get topic word distributions from gsdmm model
 cluster_word_distribution = gsdmm.cluster_word_distribution
 top_index = number_docs(gsdmm)
-top_words(cluster_word_distribution, top_index, 5)
+topics_clusters = top_words(cluster_word_distribution, top_index, 5)
 
 for nb_topic in top_index:
     display_wordcloud(nb_topic, cluster_word_distribution)
 
 coherence_gsdmm(gsdmm, top_index, id2word, train_corpus, train_data_words)
+
+# look at tags of short descriptions:
+list_tags = []
+list_ids = []
+for id, descr in zip(short_descr.index, short_descr["description"]):
+    cluster, probs = gsdmm.choose_best_label(descr)
+    if cluster in topics_clusters.keys():
+        list_tags.append(topics_clusters[cluster])
+        list_ids.append(id)
+
+select_descr = short_descr.loc[list_ids, :]
+select_descr["tags"] = list_tags
+select_descr["description"] = short_descr["description"].apply(lambda t: ' '.join(t))
+out_path = 'output/gsdmm_topic_model'
+if not os.path.isdir(out_path):
+    os.makedirs(out_path)
+select_descr.to_csv(os.path.join(out_path, "short_descr_tags.csv"))
+
+print("done")
+
+
+
+#TODO: from data_train, data_test, get short descriptions.
+#TODO use score function of GDSM to get tags.
