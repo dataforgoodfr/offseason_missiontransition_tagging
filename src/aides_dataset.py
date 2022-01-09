@@ -94,8 +94,10 @@ class AidesDataset:
         return data
 
     def get_short_descriptions(self, data_words, max_len=50):
-        data_words["len"] = data_words["description"].apply(len)
-        short_descr = data_words[data_words["len"]<=max_len]
+        #data_words_ = data_words
+        short_descr = pd.concat([data_words, data_words["description"].apply(len)], axis=1)
+        short_descr.columns = list(data_words.columns) + ["len"]
+        short_descr = short_descr[short_descr["len"]<=max_len]
         return short_descr
 
 
@@ -149,7 +151,7 @@ def remove_words_per_documents(r, data, selected_features):
     print(frequent_words)
     for feature in selected_features:
         data[feature] = data[feature].map(
-            lambda words_list : [word for word in words_list if word not in frequent_words])
+            lambda words_list:[word for word in words_list if word not in frequent_words])
     return data
 
 def flatten_list(nested_list):
