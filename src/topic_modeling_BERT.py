@@ -1,12 +1,12 @@
 
-from NLP_preprocess import AidesDataset
+from aides_dataset import AidesDataset
 
 from bertopic import BERTopic
 
 if __name__ == '__main__':
     version = "v3"
     # Load data
-    aides_dataset = AidesDataset("data/AT_aides_full.json")
+    aides_dataset = AidesDataset("data/AT_aides_full_.json")
 
     # Process the data
     aides_dataset.filter_features(["name", "description"])
