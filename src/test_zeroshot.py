@@ -39,6 +39,17 @@ def match_tags2(id):
     print(len(match))
     return len(match)/len(true_tags)
 
+def match_tags3(df):
+    accuracies = {}
+    for id in df.index:
+        tags__ = df.loc[id]["tags"]
+        true_tags__ = df.loc[id]["categories"]
+        match = set(tags__) and set(true_tags__)
+        print(len(match))
+        acc = len(match)/len(true_tags__)
+        accuracies[id] = acc
+    return pd.DataFrame.from_records(accuracies, index=["accuracy"]).T
+
 def get_description_tags(df_results, id, thr=0.7):
     scores = df_results.loc[id]
     scores = scores[scores > thr]
@@ -103,6 +114,14 @@ if __name__ == '__main__':
         tags_per_description["num_tags"] = tags_per_description["tags"].apply(lambda t: len(t.split(";")))
         tags_per_description["true_tags"] = list_true_tags
 
+        # save results on csv files
+        out_path = 'output/test_zeroshot'
+        if not os.path.isdir(out_path):
+            os.makedirs(out_path)
+        df_results.to_csv(os.path.join(out_path, "results_test_zeroshot.csv"))
+        # tags_per_description.to_csv(os.path.join(out_path, "tags_per_descr_thr{}.csv".format(args.thr)))
+        print("done")
+
         accuracy = round(np.mean(accuracies),3)
         print("ACCURACY:", accuracy)
 
@@ -111,17 +130,16 @@ if __name__ == '__main__':
         tags_per_description.set_index('Unnamed: 0', inplace=True)
         tags_per_description.drop(labels=["true_tags", "accuracies"], axis=1)
 
-    tags_per_description_results = tags_per_description.merge(processed_data, left_index=True, right_index=True, how='inner')
-    tags_per_description_results.dropna(axis=0, inplace=True)
-    tags_per_description_results["accuracy"] = tags_per_description_results.apply(lambda t: match_tags2(t))
+        tags_per_description_results = tags_per_description.merge(processed_data, left_index=True, right_index=True, how='inner')
+        tags_per_description_results.dropna(axis=0, inplace=True)
+        print(len(tags_per_description_results))
+        accuracies = match_tags3(tags_per_description_results)
+        tags_per_description_results_ = tags_per_description_results.merge(accuracies, left_index=True, right_index=True, how='inner')
+        print(len(tags_per_description_results_))
 
-    # save results on csv files
-    out_path = 'output/test_zeroshot'
-    if not os.path.isdir(out_path):
-        os.makedirs(out_path)
-    df_results.to_csv(os.path.join(out_path, "results_test_zeroshot.csv"))
-    tags_per_description.to_csv(os.path.join(out_path, "tags_per_descr_thr{}.csv".format(args.thr)))
-    print("done")
+        print("ACCURACY:", round(np.mean(tags_per_description_results_["accuracy"])))
+        tags_per_description_results_.to_csv(os.path.join(args.save_path, "tags_per_descr_results_thr{}.csv".format(args.thr)))
+
 
 # TODO: loop on all samples of the dataset.
 # TODO: save results on a csv file: line = description id, cols = tags.
