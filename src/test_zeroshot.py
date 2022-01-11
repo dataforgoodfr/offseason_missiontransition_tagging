@@ -32,6 +32,13 @@ def match_tags(df_results, id, true_tags, thr=0.7):
     match = set(predicted_tags) and set(true_tags)
     return len(match)/len(true_tags)
 
+def match_tags2(id):
+    tags__ = tags_per_description_results.loc[id]["tags"]
+    true_tags__ = tags_per_description_results.loc[id]["categories"]
+    match = set(tags__) and set(true_tags__)
+    print(len(match))
+    return len(match)/len(true_tags)
+
 def get_description_tags(df_results, id, thr=0.7):
     scores = df_results.loc[id]
     scores = scores[scores > thr]
@@ -46,6 +53,8 @@ if __name__ == '__main__':
                         help='limit number of samples for debugging.')
     parser.add_argument("-thr", type=float, default=0.7,
                         help='thresold value for tag.')
+    parser.add_argument("-save_path", type=str,
+                        help='save path for models. in that case, only postprocess the results.')
     args = parser.parse_args()
     classifier = pipeline("zero-shot-classification", model='cache/xnli')
 
@@ -62,40 +71,49 @@ if __name__ == '__main__':
 
     print("TESTING ZEROSHOT WITH threshold {}".format(args.thr))
 
-    # zero shot text classification
-    results = dict.fromkeys(["id"] + tags)
-    for key in results.keys():
-        results[key] = []
-    num_samples = len(data_words) if args.num_samples is None else args.num_samples
-    for id, descr_words in zip(list(processed_data.index[:num_samples]), data_words[:num_samples]):
-        descr = ' '.join(descr_words)
-        result = classify_description(classifier, descr, tags)
-        update_results(results, result, id)
-    # format results
-    df_results = pd.DataFrame.from_records(results)
-    df_results.set_index(keys="id", inplace=True)
-    df_results = df_results.apply(lambda t: round(t, 3))
-    print(df_results.head())
+    if args.save_path is None:
+        # zero shot text classification
+        results = dict.fromkeys(["id"] + tags)
+        for key in results.keys():
+            results[key] = []
+        num_samples = len(data_words) if args.num_samples is None else args.num_samples
+        for id, descr_words in zip(list(processed_data.index[:num_samples]), data_words[:num_samples]):
+            descr = ' '.join(descr_words)
+            result = classify_description(classifier, descr, tags)
+            update_results(results, result, id)
+        # format results
+        df_results = pd.DataFrame.from_records(results)
+        df_results.set_index(keys="id", inplace=True)
+        df_results = df_results.apply(lambda t: round(t, 3))
+        print(df_results.head())
 
+        # get tags per description and accuracy
+        accuracies = []
+        list_tags = []
+        list_true_tags = []
+        for id in df_results.index:
+            true_tags = processed_data.loc[id]["categories"]
+            list_true_tags.append(true_tags)
+            list_tags.append(get_description_tags(df_results, id, thr=args.thr))
+            accuracies.append(match_tags(df_results=df_results, id=id, true_tags=true_tags, thr=args.thr))
+        tags_per_description = dict(zip(list(df_results.index), list_tags))
+        tags_per_description = pd.DataFrame.from_records(tags_per_description, index=['tags']).T
+        #tags_per_description["accuracies"] = pd.Series(accuracies)
+        tags_per_description["accuracies"] = accuracies
+        tags_per_description["num_tags"] = tags_per_description["tags"].apply(lambda t: len(t.split(";")))
+        tags_per_description["true_tags"] = list_true_tags
 
-    # get tags per description and accuracy
-    accuracies = []
-    list_tags = []
-    list_true_tags = []
-    for id in df_results.index:
-        true_tags = processed_data.loc[id]["categories"]
-        list_true_tags.append(true_tags)
-        list_tags.append(get_description_tags(df_results, id, thr=args.thr))
-        accuracies.append(match_tags(df_results=df_results, id=id, true_tags=true_tags, thr=args.thr))
-    tags_per_description = dict(zip(list(df_results.index), list_tags))
-    tags_per_description = pd.DataFrame.from_records(tags_per_description, index=['tags']).T
-    #tags_per_description["accuracies"] = pd.Series(accuracies)
-    tags_per_description["accuracies"] = accuracies
-    tags_per_description["num_tags"] = tags_per_description["tags"].apply(lambda t: len(t.split(";")))
-    tags_per_description["true_tags"] = list_true_tags
+        accuracy = round(np.mean(accuracies),3)
+        print("ACCURACY:", accuracy)
 
-    accuracy = round(np.mean(accuracies),3)
-    print("ACCURACY:", accuracy)
+    else:
+        tags_per_description = pd.read_csv(os.path.join(args.save_path, "tags_per_descr_thr{}.csv".format(args.thr)))
+        tags_per_description.set_index('Unnamed: 0', inplace=True)
+        tags_per_description.drop(labels=["true_tags", "accuracies"], axis=1)
+
+    tags_per_description_results = tags_per_description.merge(processed_data, left_index=True, right_index=True, how='inner')
+    tags_per_description_results.dropna(axis=0, inplace=True)
+    tags_per_description_results["accuracy"] = tags_per_description_results.apply(lambda t: match_tags2(t))
 
     # save results on csv files
     out_path = 'output/test_zeroshot'
