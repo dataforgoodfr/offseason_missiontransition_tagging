@@ -166,23 +166,49 @@ def plot_most_common_words(tokens, file_name, num_words=30):
     return len(fdist)
 
 def plot_histogram(freq_dict, file_name):
-    fig, ax = plt.subplots(1, 1, figsize=(60, 10))
-    ax.set_title("Most common words")
+    fig, ax = plt.subplots(1, 1, figsize=(60, 30))
+    #ax.set_title("Most common words", fontsize=)
     ax.bar(freq_dict.keys(), freq_dict.values())
-    # ax.xticks(rotation=45)
-    ax.tick_params(axis='x', labelsize=24, labelrotation=45)
+    ax.tick_params(axis='x', labelsize=36, labelrotation=45)
     rects = ax.patches
     labels = [rect.get_height() for rect in rects]
     for rect, label in zip(rects, labels):
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width() / 2, height + 0.01, label,
-                ha='center', va='bottom', fontsize=20)
+                ha='center', va='bottom', fontsize=36)
     ax.legend()
     plt.tight_layout()
-    fig.savefig(file_name, format='pdf')
+    fig.savefig(file_name, format='png')
+
+def plot_histogram_of_categories(data_words, file_name):
+    colors = ["tab:gray", "tab:brown", "rosybrown", "tab:pink", "darkorange", "tab:olive", "tab:cyan", "darkcyan", "royalblue"]
+    xxx = data_words.categories.apply(lambda t: list(set([e.split("|")[0] for e in t])))
+    xxx = xxx.values.flatten()
+    xxx = flatten_list(list(xxx))
+    fdist = FreqDist(xxx)
+    fdist = dict(sorted(fdist.items(), key=lambda item: item[1], reverse=True))
+    fig, ax = plt.subplots(1, 1, figsize=(60, 30))
+    barlist = ax.bar(fdist.keys(), fdist.values())
+    ax.tick_params(axis='x', labelsize=36, labelrotation=90)
+    ax.tick_params(
+        axis='y',  # changes apply to the x-axis
+        labelleft=False)
+    for i, col in enumerate(colors):
+        barlist[i].set_color(col)
+    rects = ax.patches
+    labels = [rect.get_height() for rect in rects]
+    for rect, label in zip(rects, labels):
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width() / 2, height + 0.01, label,
+                ha='center', va='bottom', fontsize=36)
+    ax.legend()
+    plt.tight_layout()
+    fig.savefig(file_name, format='png')
+
+
 
 if __name__ == '__main__':
-    aides_dataset = AidesDataset("data/AT_aides_full.json")
+    aides_dataset = AidesDataset("data/MT_aides.json")
     data_words = aides_dataset.get_data_words(["id", "description", "categories"])
     unfiltered_words = aides_dataset.get_unfiltered_data_words()
     short_descr = aides_dataset.get_short_descriptions(unfiltered_words)
@@ -190,4 +216,11 @@ if __name__ == '__main__':
     tokens = flatten_list(list(tokens))
     if not os.path.isdir("plots"):
         os.makedirs("plots")
-    plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA", num_words=70)
+    plot_most_common_words(tokens=tokens, file_name="plots/most_common_words_LDA", num_words=50)
+
+    xxx = data_words.categories.apply(lambda t: list(set([e.split("|")[0] for e in t])))
+    xxx = xxx.values.flatten()
+    xxx = flatten_list(list(xxx))
+
+    plot_histogram_of_categories(data_words, "plots/histogram_of_categories.png")
+    print("done")

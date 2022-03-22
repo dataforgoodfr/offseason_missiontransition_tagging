@@ -1,56 +1,25 @@
-# General imports
-import argparse
-import pandas as pd
-from os.path import join as path_join
-import os
 
 from aides_dataset import AidesDataset
 from bertopic import BERTopic
 from sklearn.model_selection import train_test_split
+import pandas as pd
+import os
+import nltk
+nltk.download('stopwords')
+import csv
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    # Dataset arguments
-    parser.add_argument("-aides_mt_path", type=str, required=False,
-        default="data/MT_aides.json",
-        help="Path to file containing MT aides dataset.")
-    parser.add_argument("-aides_all_path", type=str, required=False,
-        default="data/AT_aides_full_.json",
-        help="Path to file containing full aides dataset.")
-
-    # BERTopic files arguments
-    parser.add_argument("-bertopic_model_path", type=str, required=False,
-        default="src/model/",
-        help="Path to folder to save BERTopic model to.")
-    parser.add_argument("-bertopic_viz_path", type=str, required=False,
-        default="plot/bert/",
-        help="Path to folder to save BERTopic visualisation to.")
-    parser.add_argument("-bertopic_res_path", type=str, required=False,
-        default="bertopics/",
-        help="Path to folder to save BERTopic results to.")
-
-    parser.add_argument("-load_model", type=str, required=False,
-        default=None,
-        help="Path to load BERTopic model from.")
-
-    args = parser.parse_args()
-
     version = "v1"
 
     # Load MT data and extract MT ids
-    print(f"Loading MT aides from {args.aides_mt_path}.")
-    MT_aides_dataset = AidesDataset(args.aides_mt_path)
+    MT_aides_dataset = AidesDataset("data/MT_aides.json")
     MT_id = [aide["id"] for aide in MT_aides_dataset.aides]
 
     # Load data and extract ids
-    print(f"Loading all aides from {args.aides_all_path}.")
-    aides_dataset = AidesDataset(args.aides_all_path)
+    aides_dataset = AidesDataset("data/AT_aides_full_.json")
     id = [aide["id"] for aide in aides_dataset.aides]
 
     # Process the data
-    print("Processing the data.")
-    #TODO: add possibly the "examples" field.
     aides_dataset.filter_features(["name", "description"])
     aides_dataset.clean_text_features(["description"],
         no_html_tags=True, # Remove <li> ... </li> stuff
@@ -61,48 +30,25 @@ if __name__ == '__main__':
     docs = [f'Titre : {aide["name"]}\nDescription : {aide["description"]}' for aide in aides_dataset.aides]
 
     # Split in train/ test
-    print("Train/test split")
     docs_train, docs_test, id_train, id_test = train_test_split(docs, id, test_size=0.25, random_state=1)
 
     # Learn/load BERTopic model
-    if args.load_model is None:
-        # Building model
-        print("Building BERTopic model.")
-        topic_model = BERTopic(language='French')
-        # Training model
-        print("Training BERTopic model")
-        topic_model.fit(docs_train)
-        # Saving model
-        save_path = path_join(args.bertopic_model_path, f"bertopic_{version}")
-        print(f"Saving BERTopic model to {save_path}.")
-        topic_model.save(save_path)
-    else:
-        print(f"Loading model from {args.load_model}.")
-        topic_model = BERTopic.load(args.load_model)
+    topic_model = BERTopic(language='French')
+    topic_model.fit(docs_train)
+    # topic_model = BERTopic.load(f"src/model/bertopic_{version}")
+
+    # Save model for future use
+    #topic_model.save(f"src/model/bertopic_{version}")
 
     # Display, visually, topics found
-    if not os.path.exists(args.bertopic_viz_path):
-        os.makedirs(args.bertopic_viz_path)
-    save_path = path_join(args.bertopic_viz_path, f"bertopic_{version}.html")
-
-    print(f"Visualising topics in {save_path}.")
     fig = topic_model.visualize_topics()
-    fig.write_html(save_path)
+    fig.write_html(f"plots/bert/bertopic_{version}.html")
 
     # Save topics in csv
-    #TODO: add test topics. (save all topics). Differentiate between AT & MT topics.
-    if not os.path.exists(args.bertopic_res_path):
-        os.makedirs(args.bertopic_res_path)
-    save_path = path_join(args.bertopic_res_path, "train_topics.csv")
-    print(f"Saving topics to {save_path}.")
-    topic_model.get_topic_info().to_csv(save_path)
+    topic_model.get_topic_info().to_csv('bertopics/train_topics.csv')
 
     # Write the topics
-    save_path = path_join(args.bertopic_res_path, "BERT_topics")
-    # if not os.path.exists(save_path):
-    #     os.makedirs(save_path)
-    print(f"Saving results to {save_path}.")
-    f = open(save_path, "w")
+    f = open("bertopics/BERT_topics", "w")
     f.write("===================== Model general information =====================")
     f.write("\n\nTopic information for AT full dataset:")
     f.write("\n" + str(topic_model.get_topic_info()))
@@ -133,8 +79,8 @@ if __name__ == '__main__':
     f.write("\n" + str(MT_test_topic_info))
 
     f.write("\n\n===================== Examples of outputs =====================")
-    #TODO: save a csv file with all topics for MT and AT. 
 
+    print(MT_id_test)
     # Output for 5 smallest descriptions
     description_topic = [(doc, topic, id) for doc, topic, id in zip(MT_docs_test, topics_test, MT_id_test)]
     description_topic.sort(key = lambda x : len(x[0]))
@@ -148,10 +94,10 @@ if __name__ == '__main__':
 
     f.close()
 
-    df = pd.DataFrame(data=MT_id_test, columns=['id'])
+    df = pd.DataFrame(data=MT_id_test,columns=['id'])
     list_descr = []
-    for i in MT_aides_dataset:
-        for aide in MT_aides_dataset:
+    for i in MT_aides_dataset :
+        for aide in MT_aides_dataset :
             if aide["id"] == i:
                 list_descr.append(aide["description"])
     print(df)
