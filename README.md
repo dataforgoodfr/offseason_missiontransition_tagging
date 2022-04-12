@@ -11,20 +11,32 @@ The libraries needed to run the code are provided in the file requirements.txt.
 * `python src/download_data.py -dataset "mt"`
 > This saves a json file in a 'data' folder named "MT_aides.json" with only Mission Transition aides.
 
-### Statistics on the dataset
-* `python src/aides_dataset.py`
-> This saves plots in a "plots" folder containing the most frequent words for the dataset descriptions.
-
-### Run a LDA topic model
-* First fill up the hyper-parameters you want in the csv file "data/csv_model_hparams.csv".
-* Then run: `python src/topic_model.py`
-> This saves a file "results_hparams.csv" in a folder "output/lda_topic_model".
+### Exploring the data: statistics on the dataset
+* To explore data on Mission Transition aides:`python src/explore_data.py - dataset "mt"`
+* To explore data on Aides Territoires aides: `python src/explore_data.py - dataset "at"`
+> This saves plots in a "plots" folder containing 5 png files: 
+  - `histogram_of_categories.png` plots the histogram of categories for the given dataset 
+  - `most_common_words_description.png` plots the histogram of most common words for the aides description. 
+  - `wc_description.png` plots the wordclound of most common words for the aides description. 
+  - `most_common_words_features.png` plots the histogram of most common words for the aides other textual features. 
+  - `wc_features.png` plots the wordclound of most common words for the aides other textual features.
 
 ### Run a BERTopic topic model
 * Run `python3 src/topic_modeling_BERT.py` to train a BERTopic model on the Aides dataset.
-> This generates multiple files, including the model itself, a visualisation and text outputs.
+> This generates multiple files, including the model itself, a visualisation and results file: 
+* By default, the folder `model` contains the trained model. Path to this folder can be changed with the argument `-bertopic_model_path`. 
+* By default, the folder `berttopics` contains the results file (path to this folder can be changed with the argument `-bertopic_res_path`)
+  1. The files `AT_results.csv` and `MT_results.csv` contain the predicted tags respectively on each description of all Aides Territoires database, and only Mission Transition database. 
+  2. The files `AT_aides_full_with_tags.json` and `MT_aides_with_tags.json` are the original json files for AT and MT databases, in which the predicted tags have been tags, under the keys "list_tags". 
+  3. The file `train_topics.csv` contains the full list of predicted tags. 
+  4. The file `BERT_topics` is a log file containing several additional results information. 
+  5. The folder `plot` contains a html visualization of the predicted tags.  
+  
+
+* To get bert topics results from a pretrained bert topic model, run `python3 src/topic_modeling_BERT.py -load_model $MODEL_PATH` with `$MODEL_PATH` a path to a pretrained topic_model.  
+
+
 * Run `python3 src/topic_modeling_BERT.py -h` to learn more on the parameters.
 
-### Run zeroshot text classification on the dataset
-* `python src\zeroshot_text_classification.py`
-> This saves 2 csv files in a folder "output/zeroshot_classif", "results.csv" and "tags_per_descr.csv".
+### Run other topic models
+See the instructions in this README to run other topic models contained in `src\other_topic_models`. 

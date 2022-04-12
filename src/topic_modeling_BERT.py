@@ -42,7 +42,7 @@ if __name__ == '__main__':
                         default="data/MT_aides.json",
                         help="Path to file containing MT aides dataset.")
     parser.add_argument("-aides_all_path", type=str, required=False,
-                        default="data/AT_aides_full_.json",
+                        default="data/AT_aides_full.json",
                         help="Path to file containing full aides dataset.")
 
     # BERTopic files arguments
@@ -125,8 +125,6 @@ if __name__ == '__main__':
 
     # Write the topics
     save_path = path_join(args.bertopic_res_path, "BERT_topics")
-    # if not os.path.exists(save_path):
-    #     os.makedirs(save_path)
     print(f"Saving results to {save_path}.")
     f = open(save_path, "w")
 
