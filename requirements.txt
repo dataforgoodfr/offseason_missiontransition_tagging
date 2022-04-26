@@ -2,3 +2,6 @@ nltk
 gensim
 sklearn
 pandas
+matplotlib
+transformers
+bertopic
