@@ -32,8 +32,11 @@ The libraries needed to run the code are provided in the file requirements.txt.
   4. The file `BERT_topics` is a log file containing several additional results information. 
   5. The folder `plot` contains a html visualization of the predicted tags.  
   
+#### Get results from pretrained BERTTopic model
+* The trained model (model used for the off-season) is available [here](https://drive.google.com/file/d/1414SWHgQVTNzIZsjdb93GX7Yc7-5blr3/view?usp=sharing)
+* The associated results file for the pretrained model are available [here](https://drive.google.com/drive/folders/17kxgU4u1vdCqiEUbY3LPgs7NufNiqJbp?usp=sharing)
+* To get bert topics results from a pretrained bert topic model, run `python3 src/topic_modeling_BERT.py -load_model $MODEL_PATH` with `$MODEL_PATH` a path to a pretrained topic_model.   
 
-* To get bert topics results from a pretrained bert topic model, run `python3 src/topic_modeling_BERT.py -load_model $MODEL_PATH` with `$MODEL_PATH` a path to a pretrained topic_model.  
 
 
 * Run `python3 src/topic_modeling_BERT.py -h` to learn more on the parameters.
